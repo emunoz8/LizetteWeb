@@ -132,6 +132,7 @@ function App() {
               autoFocus={isContactVisible}
               locale={formLocale}
               onLocaleChange={setFormLocale}
+              onSuccessComplete={closeContact}
             />
           </section>
         </div>

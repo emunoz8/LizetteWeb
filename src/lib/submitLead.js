@@ -8,6 +8,7 @@ export const MAX_MESSAGE_LENGTH = 140
 export const TURNSTILE_ACTION = 'lead_form'
 
 const SUBMISSION_TIMEOUT_MS = 20_000
+const OPTIMISTIC_RESOLVE_DELAY_MS = 150
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const phonePattern = /^\+?[0-9().\-\s]{10,20}$/
 
@@ -125,7 +126,7 @@ function normalizeSubmissionMessage(data) {
   return typeof data === 'object' ? data : null
 }
 
-function submitLeadThroughIframe(endpoint, payload) {
+function submitLeadThroughIframe(endpoint, payload, options = {}) {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
     return Promise.reject(
       new Error('Lead submission is only available in the browser.'),
@@ -133,10 +134,13 @@ function submitLeadThroughIframe(endpoint, payload) {
   }
 
   return new Promise((resolve, reject) => {
+    const { optimistic = false, onResult } = options
     const submissionId = payload.submissionId
     const frameName = `lead-submit-${submissionId}`
     const iframe = document.createElement('iframe')
     const form = document.createElement('form')
+    let hasSettled = false
+    let hasResolvedOptimistically = false
 
     iframe.name = frameName
     iframe.title = 'Lead submission response'
@@ -166,6 +170,27 @@ function submitLeadThroughIframe(endpoint, payload) {
       form.remove()
     }
 
+    const settle = (result) => {
+      if (hasSettled) {
+        return
+      }
+
+      hasSettled = true
+      cleanup()
+      onResult?.(result)
+
+      if (optimistic && hasResolvedOptimistically) {
+        return
+      }
+
+      if (result.ok) {
+        resolve()
+        return
+      }
+
+      reject(new Error(result.error || 'Lead submission failed.'))
+    }
+
     const handleMessage = (event) => {
       if (event.source !== iframe.contentWindow) {
         return
@@ -181,25 +206,34 @@ function submitLeadThroughIframe(endpoint, payload) {
         return
       }
 
-      cleanup()
-
-      if (response.ok) {
-        resolve()
-        return
-      }
-
-      reject(new Error(response.error || 'Lead submission failed.'))
+      settle({
+        ok: Boolean(response.ok),
+        error: response.error || 'Lead submission failed.',
+      })
     }
 
     timeoutId = window.setTimeout(() => {
-      cleanup()
-      reject(new Error('Lead submission timed out.'))
+      settle({
+        ok: false,
+        error: 'Lead submission timed out.',
+      })
     }, SUBMISSION_TIMEOUT_MS)
 
     window.addEventListener('message', handleMessage)
     document.body.appendChild(iframe)
     document.body.appendChild(form)
     form.submit()
+
+    if (optimistic) {
+      window.setTimeout(() => {
+        if (hasSettled || hasResolvedOptimistically) {
+          return
+        }
+
+        hasResolvedOptimistically = true
+        resolve()
+      }, OPTIMISTIC_RESOLVE_DELAY_MS)
+    }
   })
 }
 
@@ -207,6 +241,7 @@ export async function submitLead(values, options = {}) {
   const endpoint = import.meta.env.VITE_FORM_ENDPOINT?.trim()
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim()
   const turnstileToken = options.turnstileToken?.trim()
+  const optimistic = options.optimistic ?? true
 
   if (!endpoint) {
     throw new Error('Missing VITE_FORM_ENDPOINT configuration.')
@@ -240,5 +275,8 @@ export async function submitLead(values, options = {}) {
     turnstileToken,
   }
 
-  await submitLeadThroughIframe(endpoint, payload)
+  await submitLeadThroughIframe(endpoint, payload, {
+    optimistic,
+    onResult: options.onResult,
+  })
 }

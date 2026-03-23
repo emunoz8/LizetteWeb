@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import TurnstileWidget from './TurnstileWidget'
 import {
   MAX_EMAIL_LENGTH,
@@ -19,6 +19,8 @@ const emptyValues = {
   message: '',
   companyWebsite: '',
 }
+
+const SUCCESS_SCREEN_MS = 2400
 
 const formCopy = {
   es: {
@@ -79,6 +81,10 @@ const formCopy = {
       idle: 'Enviar mensaje',
       pending: 'Enviando...',
     },
+    successScreen: {
+      title: 'Gracias por su mensaje',
+      copy: 'Su consulta fue enviada correctamente.',
+    },
   },
   en: {
     languageLabel: 'Language',
@@ -138,14 +144,24 @@ const formCopy = {
       idle: 'Send message',
       pending: 'Sending...',
     },
+    successScreen: {
+      title: 'Thank you for your submission',
+      copy: 'Your inquiry was sent successfully.',
+    },
   },
 }
 
-function LeadForm({ autoFocus = false, locale = 'es', onLocaleChange }) {
+function LeadForm({
+  autoFocus = false,
+  locale = 'es',
+  onLocaleChange,
+  onSuccessComplete,
+}) {
   const [values, setValues] = useState(emptyValues)
   const [fieldErrors, setFieldErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [status, setStatus] = useState({ type: 'idle', message: '' })
+  const [isSuccessVisible, setIsSuccessVisible] = useState(false)
   const [turnstileToken, setTurnstileToken] = useState('')
   const [turnstileKey, setTurnstileKey] = useState(0)
   const copy = formCopy[locale] ?? formCopy.es
@@ -155,6 +171,37 @@ function LeadForm({ autoFocus = false, locale = 'es', onLocaleChange }) {
   const resetTurnstile = () => {
     setTurnstileToken('')
     setTurnstileKey((current) => current + 1)
+  }
+
+  useEffect(() => {
+    if (!isSuccessVisible) {
+      return undefined
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      if (onSuccessComplete) {
+        onSuccessComplete()
+        return
+      }
+
+      setIsSuccessVisible(false)
+      setStatus({ type: 'idle', message: '' })
+    }, SUCCESS_SCREEN_MS)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [isSuccessVisible, onSuccessComplete])
+
+  const showSuccessState = (message) => {
+    markSubmission()
+    setFieldErrors({})
+    setValues(emptyValues)
+    setStatus({
+      type: 'success',
+      message,
+    })
+    setIsSuccessVisible(true)
   }
 
   const handleLocaleChange = (nextLocale) => {
@@ -207,12 +254,7 @@ function LeadForm({ autoFocus = false, locale = 'es', onLocaleChange }) {
     }
 
     if (values.companyWebsite.trim()) {
-      markSubmission()
-      setStatus({
-        type: 'success',
-        message: copy.status.honeypotSuccess,
-      })
-      setValues(emptyValues)
+      showSuccessState(copy.status.honeypotSuccess)
       resetTurnstile()
       return
     }
@@ -239,18 +281,24 @@ function LeadForm({ autoFocus = false, locale = 'es', onLocaleChange }) {
     setStatus({ type: 'idle', message: '' })
 
     try {
-      await submitLead(values, { turnstileToken })
-      markSubmission()
-      setFieldErrors({})
-      setValues(emptyValues)
-      setStatus({
-        type: 'success',
-        message: copy.status.success,
+      await submitLead(values, {
+        turnstileToken,
+        optimistic: true,
+        onResult: (result) => {
+          if (!result.ok) {
+            console.error(
+              'Lead submission failed after optimistic confirmation.',
+              result.error,
+            )
+          }
+        },
       })
+      showSuccessState(copy.status.success)
     } catch (error) {
       const missingEndpoint = error.message.includes('VITE_FORM_ENDPOINT')
       const missingTurnstile = error.message.includes('VITE_TURNSTILE_SITE_KEY')
       const missingToken = error.message.includes('Turnstile token')
+      setIsSuccessVisible(false)
       setStatus({
         type: 'error',
         message: missingEndpoint
@@ -275,6 +323,33 @@ function LeadForm({ autoFocus = false, locale = 'es', onLocaleChange }) {
       *
     </span>
   )
+
+  if (isSuccessVisible) {
+    return (
+      <div
+        className="contact-success"
+        lang={locale}
+        role="status"
+        aria-live="polite"
+      >
+        <div className="contact-success__badge" aria-hidden="true">
+          <img
+            src="/check_mark.png"
+            alt=""
+            className="contact-success__icon"
+          />
+        </div>
+        <div className="contact-success__content">
+          <h2 id="contact-title" className="contact-success__title">
+            {copy.successScreen.title}
+          </h2>
+          <p className="contact-success__copy">
+            {copy.successScreen.copy}
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <form

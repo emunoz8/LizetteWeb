@@ -4,6 +4,20 @@ Single-page React + Tailwind site for collecting leads and writing them into
 Google Sheets through Google Apps Script. The frontend is static-host friendly
 and ready to deploy on Vercel.
 
+## Project summary
+
+This site was created as a clean, bilingual lead capture experience for
+Lizette Malagon and Duarte Realty Co. The goal was to keep the design elegant,
+minimal, and image-driven while making it easy for visitors to reach out from
+either desktop or mobile.
+
+The process focused on refining the visual hierarchy, simplifying the layout,
+and building a lightweight contact flow without a traditional backend. The site
+was built in React with Tailwind CSS, with the inquiry form connected to Google
+Sheets through Google Apps Script. Spanish and English support, validation,
+spam protection, and responsive behavior were all included so the final result
+feels polished while staying easy to maintain.
+
 ## Local development
 
 1. Install dependencies:
