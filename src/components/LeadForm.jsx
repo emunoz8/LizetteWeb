@@ -74,7 +74,6 @@ const formCopy = {
         'No pudimos cargar la verificacion de seguridad. Recargue la pagina e intente de nuevo.',
       genericError:
         'No pudimos enviar su mensaje. Intente de nuevo en breve.',
-      securityNote: 'Protegido por Cloudflare Turnstile.',
     },
     submit: {
       idle: 'Enviar mensaje',
@@ -134,7 +133,6 @@ const formCopy = {
         'We could not load the security check. Refresh the page and try again.',
       genericError:
         'We could not send your message. Please try again shortly.',
-      securityNote: 'Protected by Cloudflare Turnstile.',
     },
     submit: {
       idle: 'Send message',
@@ -312,9 +310,7 @@ function LeadForm({ autoFocus = false, locale = 'es', onLocaleChange }) {
         <h2 id="contact-title" className="contact-form__title">
           {copy.title}
         </h2>
-        <p className="contact-form__copy">
-          {copy.copy}
-        </p>
+        <p className="contact-form__copy">{copy.copy}</p>
       </header>
 
       <div className="contact-form__grid">
@@ -421,7 +417,7 @@ function LeadForm({ autoFocus = false, locale = 'es', onLocaleChange }) {
               maxLength={MAX_MESSAGE_LENGTH}
               value={values.message}
               onChange={handleChange}
-              className={inputClassName('message')}
+              className={`${inputClassName('message')} contact-form__textarea`.trim()}
               placeholder={copy.placeholders.message}
               aria-invalid={Boolean(fieldErrors.message)}
               aria-describedby={fieldErrors.message ? 'message-error' : undefined}
@@ -436,14 +432,10 @@ function LeadForm({ autoFocus = false, locale = 'es', onLocaleChange }) {
             </span>
           </label>
 
-          <section
+          <div
             className="contact-form__captcha"
             aria-label={copy.labels.securityCheck}
           >
-            <p className="contact-form__label">
-              {copy.labels.securityCheck}
-              {requiredMark}
-            </p>
             <TurnstileWidget
               key={`${locale}-${turnstileKey}`}
               locale={locale}
@@ -474,13 +466,10 @@ function LeadForm({ autoFocus = false, locale = 'es', onLocaleChange }) {
                   message: error.message.includes('VITE_TURNSTILE_SITE_KEY')
                     ? copy.status.missingTurnstile
                     : copy.status.captchaLoadError,
-                })
+                  })
               }}
             />
-            <p className="contact-form__captcha-note">
-              {copy.status.securityNote}
-            </p>
-          </section>
+          </div>
         </div>
       </div>
 
@@ -490,9 +479,7 @@ function LeadForm({ autoFocus = false, locale = 'es', onLocaleChange }) {
             <span className={status.type === 'error' ? 'text-clay' : 'text-moss'}>
               {status.message}
             </span>
-          ) : (
-            copy.status.securityNote
-          )}
+          ) : null}
         </p>
 
         <button
