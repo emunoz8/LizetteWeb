@@ -5,8 +5,8 @@ const TURNSTILE_VERIFY_URL =
   'https://challenges.cloudflare.com/turnstile/v0/siteverify'
 const TURNSTILE_ACTION = 'lead_form'
 const TURNSTILE_ALLOWED_HOSTNAMES = [
-  'lizetterealtor.com',
-  'www.lizetterealtor.com',
+  'soldbylizette.com',
+  'www.soldbylizette.com',
 ]
 
 const MAX_NAME_LENGTH = 30

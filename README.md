@@ -47,7 +47,7 @@ and ready to deploy on Vercel.
 ## Cloudflare Turnstile setup
 
 1. Create a Turnstile widget in Cloudflare.
-2. Add the domains that will host this site.
+2. Add the domains that will host this site, currently `soldbylizette.com` and `www.soldbylizette.com`.
 3. Copy the site key into `VITE_TURNSTILE_SITE_KEY`.
 4. Copy the secret key into the Apps Script property `TURNSTILE_SECRET_KEY`.
 5. If the domain changes, update the `TURNSTILE_ALLOWED_HOSTNAMES` constant in `google-apps-script/Code.gs` before redeploying the script.
