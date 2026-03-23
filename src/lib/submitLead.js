@@ -6,13 +6,29 @@ export const MAX_EMAIL_LENGTH = 60
 export const MAX_PHONE_LENGTH = 20
 export const MAX_MESSAGE_LENGTH = 140
 export const TURNSTILE_ACTION = 'lead_form'
+export const PHONE_INPUT_PATTERN = '^\\+?[0-9().\\-\\s]{10,20}$'
 
 const SUBMISSION_TIMEOUT_MS = 20_000
 const OPTIMISTIC_RESOLVE_DELAY_MS = 150
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const phonePattern = /^\+?[0-9().\-\s]{10,20}$/
+const phonePattern = new RegExp(PHONE_INPUT_PATTERN)
 
 const trimValue = (value) => value.trim()
+const extractPhoneDigits = (value) => trimValue(value).replace(/\D/g, '')
+
+export function normalizePhoneValue(value) {
+  const digits = extractPhoneDigits(value)
+
+  if (digits.length === 11 && digits.startsWith('1')) {
+    return digits.slice(1)
+  }
+
+  if (digits.length === 10) {
+    return digits
+  }
+
+  return ''
+}
 
 const hiddenFrameStyle = `
   position:absolute;
@@ -43,7 +59,7 @@ export function validateLead(values, messages = defaultValidationMessages) {
   const emailValue = trimValue(values.email)
   const phoneValue = trimValue(values.phone)
   const messageValue = trimValue(values.message)
-  const phoneDigits = phoneValue.replace(/\D/g, '')
+  const normalizedPhone = normalizePhoneValue(phoneValue)
 
   if (!nameValue) {
     errors.name = messages.nameRequired
@@ -63,11 +79,7 @@ export function validateLead(values, messages = defaultValidationMessages) {
     errors.phone = messages.phoneRequired
   } else if (phoneValue.length > MAX_PHONE_LENGTH) {
     errors.phone = messages.phoneTooLong
-  } else if (
-    !phonePattern.test(phoneValue) ||
-    phoneDigits.length < 10 ||
-    phoneDigits.length > 15
-  ) {
+  } else if (!phonePattern.test(phoneValue) || !normalizedPhone) {
     errors.phone = messages.phoneInvalid
   }
 
@@ -258,7 +270,7 @@ export async function submitLead(values, options = {}) {
   const payload = {
     name: trimValue(values.name),
     email: trimValue(values.email),
-    phone: trimValue(values.phone),
+    phone: normalizePhoneValue(values.phone),
     message: trimValue(values.message),
     companyWebsite: trimValue(values.companyWebsite),
     parentOrigin:

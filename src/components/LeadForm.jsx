@@ -6,6 +6,7 @@ import {
   MAX_PHONE_LENGTH,
   MAX_MESSAGE_LENGTH,
   MIN_SUBMIT_INTERVAL_MS,
+  PHONE_INPUT_PATTERN,
   markSubmission,
   shouldThrottleSubmission,
   submitLead,
@@ -43,7 +44,7 @@ const formCopy = {
     placeholders: {
       name: 'Su nombre completo',
       email: 'nombre@ejemplo.com',
-      phone: '312 555 1234',
+      phone: '123 456 7890',
       message: 'Como podemos ayudarle?',
     },
     validation: {
@@ -54,7 +55,8 @@ const formCopy = {
       emailInvalid: 'Ingrese un correo electronico valido.',
       phoneRequired: 'Agregue un numero de telefono.',
       phoneTooLong: `Mantenga su numero de telefono por debajo de ${MAX_PHONE_LENGTH} caracteres.`,
-      phoneInvalid: 'Ingrese un numero de telefono valido.',
+      phoneInvalid:
+        'Ingrese un numero de telefono valido de 10 digitos. Se acepta un 1 adicional al inicio.',
       messageRequired: 'Comparta un mensaje breve.',
       messageTooLong: `Mantenga su mensaje por debajo de ${MAX_MESSAGE_LENGTH} caracteres.`,
     },
@@ -106,7 +108,7 @@ const formCopy = {
     placeholders: {
       name: 'Your full name',
       email: 'name@example.com',
-      phone: '(312) 555-1234',
+      phone: '123 456 7890',
       message: 'How can we help you?',
     },
     validation: {
@@ -117,7 +119,8 @@ const formCopy = {
       emailInvalid: 'Please enter a valid email address.',
       phoneRequired: 'Please add a phone number.',
       phoneTooLong: `Please keep your phone number under ${MAX_PHONE_LENGTH} characters.`,
-      phoneInvalid: 'Please enter a valid phone number.',
+      phoneInvalid:
+        'Please enter a valid 10-digit phone number. A leading 1 is allowed.',
       messageRequired: 'Please share a short message.',
       messageTooLong: `Please keep your message under ${MAX_MESSAGE_LENGTH} characters.`,
     },
@@ -159,6 +162,7 @@ function LeadForm({
 }) {
   const [values, setValues] = useState(emptyValues)
   const [fieldErrors, setFieldErrors] = useState({})
+  const [touchedFields, setTouchedFields] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [status, setStatus] = useState({ type: 'idle', message: '' })
   const [isSuccessVisible, setIsSuccessVisible] = useState(false)
@@ -196,6 +200,7 @@ function LeadForm({
   const showSuccessState = (message) => {
     markSubmission()
     setFieldErrors({})
+    setTouchedFields({})
     setValues(emptyValues)
     setStatus({
       type: 'success',
@@ -211,7 +216,10 @@ function LeadForm({
 
     const nextCopy = formCopy[nextLocale] ?? formCopy.es
 
-    if (Object.keys(fieldErrors).length > 0) {
+    if (
+      Object.keys(fieldErrors).length > 0 ||
+      Object.keys(touchedFields).length > 0
+    ) {
       setFieldErrors(validateLead(values, nextCopy.validation))
     }
 
@@ -231,7 +239,7 @@ function LeadForm({
 
     setValues(nextValues)
 
-    if (Object.keys(fieldErrors).length > 0) {
+    if (fieldErrors[name] || touchedFields[name]) {
       setFieldErrors(validateLead(nextValues, copy.validation))
     }
 
@@ -240,11 +248,34 @@ function LeadForm({
     )
   }
 
+  const handleBlur = (event) => {
+    const { name } = event.target
+
+    setTouchedFields((current) => {
+      if (current[name]) {
+        return current
+      }
+
+      return {
+        ...current,
+        [name]: true,
+      }
+    })
+
+    setFieldErrors(validateLead(values, copy.validation))
+  }
+
   const handleSubmit = async (event) => {
     event.preventDefault()
 
     const nextErrors = liveErrors
     if (Object.keys(nextErrors).length > 0) {
+      setTouchedFields({
+        name: true,
+        email: true,
+        phone: true,
+        message: true,
+      })
       setFieldErrors(nextErrors)
       setStatus({
         type: 'error',
@@ -403,6 +434,7 @@ function LeadForm({
               maxLength={MAX_NAME_LENGTH}
               value={values.name}
               onChange={handleChange}
+              onBlur={handleBlur}
               className={inputClassName('name')}
               placeholder={copy.placeholders.name}
               aria-invalid={Boolean(fieldErrors.name)}
@@ -428,6 +460,7 @@ function LeadForm({
                 maxLength={MAX_EMAIL_LENGTH}
                 value={values.email}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 className={inputClassName('email')}
                 placeholder={copy.placeholders.email}
                 aria-invalid={Boolean(fieldErrors.email)}
@@ -451,8 +484,10 @@ function LeadForm({
                 inputMode="tel"
                 required
                 maxLength={MAX_PHONE_LENGTH}
+                pattern={PHONE_INPUT_PATTERN}
                 value={values.phone}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 className={inputClassName('phone')}
                 placeholder={copy.placeholders.phone}
                 aria-invalid={Boolean(fieldErrors.phone)}
@@ -492,6 +527,7 @@ function LeadForm({
               maxLength={MAX_MESSAGE_LENGTH}
               value={values.message}
               onChange={handleChange}
+              onBlur={handleBlur}
               className={`${inputClassName('message')} contact-form__textarea`.trim()}
               placeholder={copy.placeholders.message}
               aria-invalid={Boolean(fieldErrors.message)}
