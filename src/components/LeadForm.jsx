@@ -20,7 +20,7 @@ const emptyValues = {
   companyWebsite: '',
 }
 
-const SUCCESS_SCREEN_MS = 2400
+const SUCCESS_SCREEN_MS = 4200
 
 const formCopy = {
   es: {

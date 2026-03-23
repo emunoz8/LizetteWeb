@@ -483,18 +483,18 @@ textarea {
   }
 
   .contact-success {
-    @apply flex min-h-[24rem] w-full flex-col items-center justify-center gap-6 py-8 text-center sm:min-h-[26rem];
+    @apply flex min-h-[24rem] w-full flex-col items-center justify-center gap-7 py-8 text-center sm:min-h-[26rem];
   }
 
   .contact-success__badge {
-    @apply grid h-24 w-24 place-items-center rounded-full border border-black/8 bg-sand/55;
+    @apply grid h-32 w-32 place-items-center rounded-full border border-black/8 bg-sand/55;
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.82),
       0 18px 34px rgba(25, 25, 25, 0.08);
   }
 
   .contact-success__icon {
-    @apply h-10 w-10 object-contain;
+    @apply h-16 w-16 object-contain;
   }
 
   .contact-success__content {
