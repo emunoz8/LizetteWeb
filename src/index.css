@@ -568,15 +568,16 @@ textarea {
   }
 
   .contact-form__captcha {
-    @apply mt-1;
+    @apply mt-1 flex justify-center;
   }
 
   .contact-form__captcha-shell {
-    @apply overflow-hidden rounded-[1.2rem] border border-black/8 bg-white/92;
+    @apply flex w-full justify-center bg-transparent;
   }
 
   .contact-form__captcha-widget {
     @apply min-h-[70px];
+    width: min(100%, 300px);
   }
 
   .contact-form__footer {
